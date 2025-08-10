@@ -34,59 +34,83 @@ function showTab(tab) {
   document.getElementById("stats").style.display = tab === "stats" ? "" : "none";
 }
 
-// Affichage pyramide avec badges visuels
+// Canvas et contexte
+const canvas = document.getElementById('canvasPyramide');
+const ctx = canvas.getContext('2d');
+
+// Dessiner badge joueur sur canvas
+function dessinerBadge(x, y, width, height, texte) {
+  const radius = 12;
+  ctx.fillStyle = "#ff914d";
+  ctx.strokeStyle = "#c55a11";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff";
+  ctx.font = `${Math.min(16, height * 0.6)}px Arial`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(texte, x + width / 2, y + height / 2);
+}
+
+// Afficher pyramide dans canvas
 function afficherPyramide(joueurs) {
-  const container = document.getElementById('pyramide');
-  container.innerHTML = `
-    <h2>Pyramide</h2>
-    <input type="text" id="nouveauNom" placeholder="Nom adhérent" />
-    <button onclick="ajouterJoueur()">➕ Ajouter joueur</button>
-    <div id="vuePyramide" class="pyramide"></div>
-  `;
-  const vue = document.getElementById("vuePyramide");
-  vue.innerHTML = ''; // Reset contenu
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (let niveau = nomsNiveaux.length; niveau >= 1; niveau--) {
-    let divNiveau = document.createElement("div");
-    divNiveau.className = "niveau";
-    // Largeur réduite par niveau pour effet pyramide
-    divNiveau.style.width = `${100 - (nomsNiveaux.length - niveau) * 7}%`;
-    divNiveau.style.margin = "8px 0";
-    divNiveau.style.border = "2px solid #c55a11";
-    divNiveau.style.borderRadius = "10px";
-    divNiveau.style.padding = "10px";
-    divNiveau.style.backgroundColor = "#f9f1e7";
-    divNiveau.style.boxShadow = "0 2px 8px rgba(197,90,17,0.3)";
-    divNiveau.style.textAlign = "center";
+  const padding = 20;
+  const largeurBase = canvas.width - 2 * padding;
+  const hauteurNiveau = (canvas.height - 2 * padding) / 10;
 
-    const titre = document.createElement("div");
-    titre.className = "niveau-title";
-    titre.style.fontWeight = "bold";
-    titre.style.fontSize = "1.2em";
-    titre.style.marginBottom = "10px";
-    titre.textContent = `${nomsNiveaux[niveau - 1]} (Niveau ${niveau})`;
-    divNiveau.appendChild(titre);
+  // 10 niveaux de bas (niveau 1) en haut (niveau 10)
+  for(let i = 0; i < 10; i++) {
+    const niveau = 10 - i;
+    const y = padding + i * hauteurNiveau;
+    const largeurNiv = largeurBase * (niveau / 10);
+    const xNiv = (canvas.width - largeurNiv) / 2;
 
-    const badgesContainer = document.createElement("div");
-    badgesContainer.style.display = "flex";
-    badgesContainer.style.flexWrap = "wrap";
-    badgesContainer.style.justifyContent = "center";
-    badgesContainer.style.gap = "8px";
+    // Bande niveau
+    ctx.fillStyle = "#f9f1e7";
+    ctx.strokeStyle = "#c55a11";
+    ctx.lineWidth = 3;
+    ctx.fillRect(xNiv, y, largeurNiv, hauteurNiveau - 5);
+    ctx.strokeRect(xNiv, y, largeurNiv, hauteurNiveau - 5);
 
-    joueurs.filter(j => j.niveau === niveau).forEach(joueur => {
-      const badge = document.createElement("div");
-      badge.className = "badge";
-      badge.textContent = joueur.nom;
-      badge.style.cursor = "default";
-      badgesContainer.appendChild(badge);
-    });
+    // Nom niveau
+    ctx.fillStyle = "#c55a11";
+    ctx.font = "bold 18px Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(`${nomsNiveaux[niveau-1]} (Niveau ${niveau})`, xNiv + 10, y + 5);
 
-    divNiveau.appendChild(badgesContainer);
-    vue.appendChild(divNiveau);
+    // Joueurs niveau
+    let joueursNiv = joueurs.filter(j => j.niveau === niveau);
+    if(joueursNiv.length) {
+      const espacX = largeurNiv / (joueursNiv.length + 1);
+      const badgeWidth = Math.min(espacX * 0.8, 120);
+      const badgeHeight = hauteurNiveau * 0.6;
+
+      joueursNiv.forEach((joueur, idx) => {
+        const xBadge = xNiv + espacX * (idx + 1) - badgeWidth / 2;
+        const yBadge = y + hauteurNiveau / 2;
+        dessinerBadge(xBadge, yBadge, badgeWidth, badgeHeight, joueur.nom);
+      });
+    }
   }
 }
 
-// Formulaire défi
+// Afficher formulaire défi
 function afficherDefi(joueurs) {
   const container = document.getElementById('defi');
   container.innerHTML = `
@@ -104,7 +128,7 @@ function afficherDefi(joueurs) {
   });
 }
 
-// Stats
+// Afficher stats
 function afficherStats(joueurs) {
   const container = document.getElementById('stats');
   container.innerHTML = "<h2>Statistiques</h2>";
@@ -116,19 +140,20 @@ function afficherStats(joueurs) {
 // Ajouter joueur
 async function ajouterJoueur() {
   let nom = document.getElementById('nouveauNom').value.trim();
-  if (!nom) return alert("Nom vide");
+  if(!nom) return alert("Nom vide");
   const check = await db.collection('joueurs').where('nom', '==', nom).get();
-  if (!check.empty) return alert("Ce joueur existe déjà !");
+  if(!check.empty) return alert("Ce joueur existe déjà !");
   await db.collection('joueurs').add({ nom, niveau: 1, victoires: 0, defaites: 0 });
+  document.getElementById('nouveauNom').value = '';
 }
 
 // Gérer défi
 async function gererDefi() {
   let id1 = document.getElementById('joueurSelect').value;
   let id2 = document.getElementById('adversaireSelect').value;
-  if (id1 === id2) return alert("Joueurs identiques !");
+  if(id1 === id2) return alert("Joueurs identiques !");
   let scoreTxt = document.getElementById('score').value.trim();
-  if (!scoreTxt) return alert("Pas de score");
+  if(!scoreTxt) return alert("Pas de score");
 
   let j1Doc = await db.collection('joueurs').doc(id1).get();
   let j2Doc = await db.collection('joueurs').doc(id2).get();
@@ -140,27 +165,42 @@ async function gererDefi() {
   let perdant = gagnant.id === j1.id ? j2 : j1;
 
   // Règles
-  if (j1.niveau === j2.niveau) {
-    if (gagnant.niveau < 10) gagnant.niveau++;
-    if (perdant.niveau > 1) perdant.niveau--;
-  } else if (perdant.niveau === gagnant.niveau + 1 && gagnant.id === j1.id) {
+  if(j1.niveau === j2.niveau) {
+    if(gagnant.niveau < 10) gagnant.niveau++;
+    if(perdant.niveau > 1) perdant.niveau--;
+  } else if(perdant.niveau === gagnant.niveau + 1 && gagnant.id === j1.id) {
     gagnant.niveau++;
-  } else if (gagnant.niveau === 9 && perdant.niveau === 10 && gagnant.id === j1.id) {
+  } else if(gagnant.niveau === 9 && perdant.niveau === 10 && gagnant.id === j1.id) {
     gagnant.niveau = 10;
   }
 
   gagnant.victoires++;
   perdant.defaites++;
 
-  await db.collection('joueurs').doc(gagnant.id).update(gagnant);
-  await db.collection('joueurs').doc(perdant.id).update(perdant);
-  await db.collection('defis').add({ joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt, gagnant: gagnant.nom, date: new Date() });
+  await db.collection('joueurs').doc(gagnant.id).update({
+    niveau: gagnant.niveau,
+    victoires: gagnant.victoires
+  });
+  await db.collection('joueurs').doc(perdant.id).update({
+    niveau: perdant.niveau,
+    defaites: perdant.defaites
+  });
+
+  await db.collection('defis').add({
+    joueur1: j1.nom,
+    joueur2: j2.nom,
+    score: scoreTxt,
+    gagnant: gagnant.nom,
+    date: new Date()
+  });
+
+  document.getElementById('score').value = '';
 }
 
 // Synchronisation temps réel
-db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
+db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snapshot => {
   let joueurs = [];
-  snap.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
+  snapshot.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
   afficherPyramide(joueurs);
   afficherDefi(joueurs);
   afficherStats(joueurs);
