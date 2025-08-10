@@ -34,7 +34,7 @@ function showTab(tab) {
   document.getElementById("stats").style.display = tab === "stats" ? "" : "none";
 }
 
-// Affichage pyramide
+// Affichage pyramide avec badges visuels
 function afficherPyramide(joueurs) {
   const container = document.getElementById('pyramide');
   container.innerHTML = `
@@ -44,14 +44,45 @@ function afficherPyramide(joueurs) {
     <div id="vuePyramide" class="pyramide"></div>
   `;
   const vue = document.getElementById("vuePyramide");
+  vue.innerHTML = ''; // Reset contenu
+
   for (let niveau = nomsNiveaux.length; niveau >= 1; niveau--) {
-    let div = document.createElement("div");
-    div.className = "niveau";
-    div.innerHTML = `<div class="niveau-title">${nomsNiveaux[niveau-1]} (Niveau ${niveau})</div>`;
-    joueurs.filter(j => j.niveau === niveau).forEach(j => {
-      div.innerHTML += `<span class="badge">${j.nom}</span>`;
+    let divNiveau = document.createElement("div");
+    divNiveau.className = "niveau";
+    // Largeur réduite par niveau pour effet pyramide
+    divNiveau.style.width = `${100 - (nomsNiveaux.length - niveau) * 7}%`;
+    divNiveau.style.margin = "8px 0";
+    divNiveau.style.border = "2px solid #c55a11";
+    divNiveau.style.borderRadius = "10px";
+    divNiveau.style.padding = "10px";
+    divNiveau.style.backgroundColor = "#f9f1e7";
+    divNiveau.style.boxShadow = "0 2px 8px rgba(197,90,17,0.3)";
+    divNiveau.style.textAlign = "center";
+
+    const titre = document.createElement("div");
+    titre.className = "niveau-title";
+    titre.style.fontWeight = "bold";
+    titre.style.fontSize = "1.2em";
+    titre.style.marginBottom = "10px";
+    titre.textContent = `${nomsNiveaux[niveau - 1]} (Niveau ${niveau})`;
+    divNiveau.appendChild(titre);
+
+    const badgesContainer = document.createElement("div");
+    badgesContainer.style.display = "flex";
+    badgesContainer.style.flexWrap = "wrap";
+    badgesContainer.style.justifyContent = "center";
+    badgesContainer.style.gap = "8px";
+
+    joueurs.filter(j => j.niveau === niveau).forEach(joueur => {
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = joueur.nom;
+      badge.style.cursor = "default";
+      badgesContainer.appendChild(badge);
     });
-    vue.appendChild(div);
+
+    divNiveau.appendChild(badgesContainer);
+    vue.appendChild(divNiveau);
   }
 }
 
