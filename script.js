@@ -1,5 +1,5 @@
 // === Configuration Firebase ===
-// Remplace par ta configuration depuis la console Firebase
+// ⚠️ Remplace par tes infos Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCxikXGPoWe8H5ySTqbMRp_D50GX-6X0rY",
     authDomain: "championnat-simples-hommes.firebaseapp.com",
@@ -9,10 +9,11 @@ const firebaseConfig = {
     appId: "1:264288626258:web:5272c3c971230f2dc1a18b"
 };
 
-const app = firebase.initializeApp(firebaseConfig);
+// Initialisation
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// === Noms des niveaux ===
+// === Niveaux ===
 const nomsNiveaux = [
   "Renardeaux",
   "Petits roux",
@@ -26,14 +27,14 @@ const nomsNiveaux = [
   "Renard Majestieux"
 ];
 
-// === Navigation ===
+// Navigation onglets
 function showTab(tab) {
   document.getElementById("pyramide").style.display = tab === "pyramide" ? "" : "none";
   document.getElementById("defi").style.display = tab === "defi" ? "" : "none";
   document.getElementById("stats").style.display = tab === "stats" ? "" : "none";
 }
 
-// === Affichage pyramide ===
+// Affichage pyramide
 function afficherPyramide(joueurs) {
   const container = document.getElementById('pyramide');
   container.innerHTML = `
@@ -42,7 +43,7 @@ function afficherPyramide(joueurs) {
     <button onclick="ajouterJoueur()">➕ Ajouter joueur</button>
     <div id="vuePyramide" class="pyramide"></div>
   `;
-  const vue = container.querySelector("#vuePyramide");
+  const vue = document.getElementById("vuePyramide");
   for (let niveau = nomsNiveaux.length; niveau >= 1; niveau--) {
     let div = document.createElement("div");
     div.className = "niveau";
@@ -54,16 +55,7 @@ function afficherPyramide(joueurs) {
   }
 }
 
-// === Affichage stats ===
-function afficherStats(joueurs) {
-  const container = document.getElementById('stats');
-  container.innerHTML = "<h2>Statistiques</h2>";
-  joueurs.forEach(j => {
-    container.innerHTML += `<div><b>${j.nom}</b> - 🏆 ${j.victoires} / ❌ ${j.defaites} - Niveau ${j.niveau}</div>`;
-  });
-}
-
-// === Formulaire défi ===
+// Formulaire défi
 function afficherDefi(joueurs) {
   const container = document.getElementById('defi');
   container.innerHTML = `
@@ -81,7 +73,16 @@ function afficherDefi(joueurs) {
   });
 }
 
-// === Ajouter joueur ===
+// Stats
+function afficherStats(joueurs) {
+  const container = document.getElementById('stats');
+  container.innerHTML = "<h2>Statistiques</h2>";
+  joueurs.forEach(j => {
+    container.innerHTML += `<div><b>${j.nom}</b> - 🏆 ${j.victoires} / ❌ ${j.defaites} - Niveau ${j.niveau}</div>`;
+  });
+}
+
+// Ajouter joueur
 async function ajouterJoueur() {
   let nom = document.getElementById('nouveauNom').value.trim();
   if (!nom) return alert("Nom vide");
@@ -90,7 +91,7 @@ async function ajouterJoueur() {
   await db.collection('joueurs').add({ nom, niveau: 1, victoires: 0, defaites: 0 });
 }
 
-// === Gestion défi ===
+// Gérer défi
 async function gererDefi() {
   let id1 = document.getElementById('joueurSelect').value;
   let id2 = document.getElementById('adversaireSelect').value;
@@ -122,11 +123,10 @@ async function gererDefi() {
 
   await db.collection('joueurs').doc(gagnant.id).update(gagnant);
   await db.collection('joueurs').doc(perdant.id).update(perdant);
-
   await db.collection('defis').add({ joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt, gagnant: gagnant.nom, date: new Date() });
 }
 
-// === WebSocket Firestore ===
+// Synchronisation temps réel
 db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
   let joueurs = [];
   snap.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
