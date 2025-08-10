@@ -21,7 +21,13 @@
   </header>
 
   <main>
-    <section id="pyramide"></section>
+    <section id="pyramide">
+      <h2>Pyramide</h2>
+      <input type="text" id="nouveauNom" placeholder="Nom adhérent" />
+      <button onclick="ajouterJoueur()">➕ Ajouter joueur</button>
+      <canvas id="canvasPyramide" width="600" height="600" 
+              style="border:1px solid #ccc; display:block; margin: 20px auto;"></canvas>
+    </section>
     <section id="defi" style="display:none;"></section>
     <section id="stats" style="display:none;"></section>
   </main>
