@@ -14,13 +14,16 @@
 <header>
   <h1>🏆 Championnat du Renard 🦊</h1>
   <nav>
+    <button onclick="showTab('regles')">Règles</button>
     <button onclick="showTab('pyramide')">Pyramide</button>
     <button onclick="showTab('defi')">Lancer un défi</button>
     <button onclick="showTab('stats')">Statistiques</button>
+    
   </nav>
 </header>
 
 <main>
+  <section id="regles" style="display:none;"></section>
   <section id="pyramide">
     <h2>Pyramide</h2>
     <input type="text" id="nouveauNom" placeholder="Nom adhérent" />
@@ -32,6 +35,7 @@
 
   <section id="defi" style="display:none;"></section>
   <section id="stats" style="display:none;"></section>
+  
 </main>
 
 <script src="script.js"></script>
