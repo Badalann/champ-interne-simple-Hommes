@@ -1,16 +1,72 @@
 body {
-  font-family: Arial,sans-serif;
-  background:#fffaf3; margin:0;
+  font-family: Arial, sans-serif;
+  background: #fffaf3;
+  margin: 0;
 }
 h1 {
-  color: #c55a11; text-align:center; padding:20px 0 0 0;
+  color: #c55a11;
+  text-align: center;
+  padding-top: 20px;
 }
-nav { text-align:center; margin-bottom:18px; }
+nav {
+  text-align: center;
+  margin-bottom: 20px;
+}
 button {
-  margin:8px; padding:8px 15px; background:#c55a11; color:#fff; border:none; border-radius:5px; cursor: pointer;
+  margin: 8px;
+  padding: 8px 15px;
+  background: #c55a11;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
-button:hover { background:#ee7b23; }
-section { max-width:800px; margin:auto; padding:10px; }
+button:hover { background: #ee7b23; }
+section {
+  max-width: 650px;
+  margin: auto;
+  padding: 10px;
+}
+
+/* Styles pour la pyramide améliorée */
+.pyramide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.niveau {
+  margin: 8px 0;
+  border: 2px solid #c55a11;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #f9f1e7;
+  box-shadow: 0 2px 8px rgba(197,90,17,0.3);
+  text-align: center;
+}
+
+.niveau-title {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.badge {
+  cursor: default;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background-color: #ff914d;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  margin: 4px;
+  display: inline-block;
+}
+
 select, input {
-  padding:6px; margin:5px 0; width:100%; max-width:300px;
+  padding: 6px;
+  margin: 5px 0;
+  width: 100%;
+  max-width: 300px;
 }
