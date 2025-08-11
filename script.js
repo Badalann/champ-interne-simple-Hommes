@@ -7,14 +7,6 @@ storageBucket: "championnat-simples-hommes.firebasestorage.app",
 messagingSenderId: "264288626258",
 appId: "1:264288626258:web:5272c3c971230f2dc1a18b"
 
-// === Configuration Firebase ===
-const firebaseConfig = {
-  apiKey: "TON_API_KEY",
-  authDomain: "TON_PROJECT.firebaseapp.com",
-  projectId: "TON_PROJECT_ID",
-  storageBucket: "TON_PROJECT.appspot.com",
-  messagingSenderId: "TON_ID",
-  appId: "TON_APP_ID"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
