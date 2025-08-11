@@ -13,6 +13,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// === Niveaux ===
 const nomsNiveaux = [
   "Renardeaux",
   "Petits roux",
@@ -26,105 +27,66 @@ const nomsNiveaux = [
   "Renard Majestieux"
 ];
 
+// Navigation onglets
 function showTab(tab) {
   document.getElementById("pyramide").style.display = tab === "pyramide" ? "" : "none";
   document.getElementById("defi").style.display = tab === "defi" ? "" : "none";
   document.getElementById("stats").style.display = tab === "stats" ? "" : "none";
 }
 
-// --- Canvas - nouvelle pyramide ---
-const canvas = document.getElementById('canvasPyramide');
-const ctx = canvas.getContext('2d');
-const nombreNiveaux = 10;
-
-function dessinerBadge(x, y, width, height, texte) {
-  const radius = 14;
-  ctx.fillStyle = "#ff914d";
-  ctx.strokeStyle = "#c55a11";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = "#fff";
-  ctx.font = `bold ${Math.min(20, height * 0.7)}px Arial`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(texte, x + width / 2, y + height / 2);
-}
-
+// Affichage pyramide avec badges visuels
 function afficherPyramide(joueurs) {
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
+  const container = document.getElementById('pyramide');
+  container.innerHTML = `
+    <h2>Pyramide</h2>
+    <input type="text" id="nouveauNom" placeholder="Nom adhérent" />
+    <button onclick="ajouterJoueur()">➕ Ajouter joueur</button>
+    <div id="vuePyramide" class="pyramide"></div>
+  `;
+  const vue = document.getElementById("vuePyramide");
+  vue.innerHTML = ''; // Reset contenu
 
-  const paddingY = 24; // marge haut/bas
-  const minHeight = 38;
-  const levels = nombreNiveaux;
-  const widthBase = W * 0.8;
-  const minWidth = W * 0.18; // sommet
-  const widthDiff = (widthBase - minWidth) / (levels - 1);
+  for (let niveau = nomsNiveaux.length; niveau >= 1; niveau--) {
+    let divNiveau = document.createElement("div");
+    divNiveau.className = "niveau";
+    // Largeur réduite par niveau pour effet pyramide
+    divNiveau.style.width = `${100 - (nomsNiveaux.length - niveau) * 7}%`;
+    divNiveau.style.margin = "8px 0";
+    divNiveau.style.border = "2px solid #c55a11";
+    divNiveau.style.borderRadius = "10px";
+    divNiveau.style.padding = "10px";
+    divNiveau.style.backgroundColor = "#f9f1e7";
+    divNiveau.style.boxShadow = "0 2px 8px rgba(197,90,17,0.3)";
+    divNiveau.style.textAlign = "center";
 
-  // Calculer la hauteur de chaque niveau selon les badges
-  let badgesParNiveau = [];
-  let heightParNiveau = [];
-  for (let i=0; i<levels; i++) {
-    const niveau = levels-i;
-    const joueursNiv = joueurs.filter(j=>j.niveau===niveau);
-    badgesParNiveau[i]=joueursNiv.length;
-    // hauteur proportionnelle au nombre de badges + min
-    heightParNiveau[i] = Math.max(minHeight, 34 + Math.ceil(joueursNiv.length/4)*32);
-  }
-  const hauteurTotale = heightParNiveau.reduce((a,b)=>a+b,0) + paddingY*2;
-  let y = (H - hauteurTotale) / 2 + paddingY;
+    const titre = document.createElement("div");
+    titre.className = "niveau-title";
+    titre.style.fontWeight = "bold";
+    titre.style.fontSize = "1.2em";
+    titre.style.marginBottom = "10px";
+    titre.textContent = `${nomsNiveaux[niveau - 1]} (Niveau ${niveau})`;
+    divNiveau.appendChild(titre);
 
-  for (let i=0; i<levels; i++) {
-    const niveau = levels-i;
-    const joueursNiv = joueurs.filter(j=>j.niveau===niveau);
+    const badgesContainer = document.createElement("div");
+    badgesContainer.style.display = "flex";
+    badgesContainer.style.flexWrap = "wrap";
+    badgesContainer.style.justifyContent = "center";
+    badgesContainer.style.gap = "8px";
 
-    // largeur du niveau
-    const widthNiv = widthBase - i*widthDiff;
-    const xNiv = (W-widthNiv-120)/2; // 120 pour zone nom niveau à droite
+    joueurs.filter(j => j.niveau === niveau).forEach(joueur => {
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = joueur.nom;
+      badge.style.cursor = "default";
+      badgesContainer.appendChild(badge);
+    });
 
-    // Ligne séparatrice supérieure
-    ctx.strokeStyle = "#c55a11";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(xNiv, y);
-    ctx.lineTo(xNiv+widthNiv, y);
-    ctx.stroke();
-
-    // Badges
-    const spaceX = widthNiv/(joueursNiv.length+1);
-    const badgeW = Math.min(spaceX*0.8,110);
-    const badgeH = heightParNiveau[i]*0.7;
-    for (let k=0;k<joueursNiv.length;k++) {
-      const xBadge = xNiv+spaceX*(k+1)-badgeW/2;
-      const yBadge = y+heightParNiveau[i]/2-badgeH/2;
-      dessinerBadge(xBadge, yBadge, badgeW, badgeH, joueursNiv[k].nom);
-    }
-
-    // Nom du niveau à droite
-    ctx.font = "bold 17px Arial";
-    ctx.fillStyle = "#c55a11";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`${nomsNiveaux[niveau-1]} (Niv.${niveau})`, xNiv+widthNiv+20, y + heightParNiveau[i]/2);
-
-    y += heightParNiveau[i];
+    divNiveau.appendChild(badgesContainer);
+    vue.appendChild(divNiveau);
   }
 }
 
-// --- Formulaire défi / stats inchangés ---
+// Formulaire défi
 function afficherDefi(joueurs) {
   const container = document.getElementById('defi');
   container.innerHTML = `
@@ -142,6 +104,7 @@ function afficherDefi(joueurs) {
   });
 }
 
+// Stats
 function afficherStats(joueurs) {
   const container = document.getElementById('stats');
   container.innerHTML = "<h2>Statistiques</h2>";
@@ -150,21 +113,22 @@ function afficherStats(joueurs) {
   });
 }
 
+// Ajouter joueur
 async function ajouterJoueur() {
   let nom = document.getElementById('nouveauNom').value.trim();
-  if(!nom) return alert("Nom vide");
+  if (!nom) return alert("Nom vide");
   const check = await db.collection('joueurs').where('nom', '==', nom).get();
-  if(!check.empty) return alert("Ce joueur existe déjà !");
+  if (!check.empty) return alert("Ce joueur existe déjà !");
   await db.collection('joueurs').add({ nom, niveau: 1, victoires: 0, defaites: 0 });
-  document.getElementById('nouveauNom').value = '';
 }
 
+// Gérer défi
 async function gererDefi() {
   let id1 = document.getElementById('joueurSelect').value;
   let id2 = document.getElementById('adversaireSelect').value;
-  if(id1 === id2) return alert("Joueurs identiques !");
+  if (id1 === id2) return alert("Joueurs identiques !");
   let scoreTxt = document.getElementById('score').value.trim();
-  if(!scoreTxt) return alert("Pas de score");
+  if (!scoreTxt) return alert("Pas de score");
 
   let j1Doc = await db.collection('joueurs').doc(id1).get();
   let j2Doc = await db.collection('joueurs').doc(id2).get();
@@ -175,29 +139,28 @@ async function gererDefi() {
   let gagnant = set1[0] > set1[1] ? j1 : j2;
   let perdant = gagnant.id === j1.id ? j2 : j1;
 
-  if(j1.niveau === j2.niveau) {
-    if(gagnant.niveau < 10) gagnant.niveau++;
-    if(perdant.niveau > 1) perdant.niveau--;
-  } else if(perdant.niveau === gagnant.niveau + 1 && gagnant.id === j1.id) {
+  // Règles
+  if (j1.niveau === j2.niveau) {
+    if (gagnant.niveau < 10) gagnant.niveau++;
+    if (perdant.niveau > 1) perdant.niveau--;
+  } else if (perdant.niveau === gagnant.niveau + 1 && gagnant.id === j1.id) {
     gagnant.niveau++;
-  } else if(gagnant.niveau === 9 && perdant.niveau === 10 && gagnant.id === j1.id) {
+  } else if (gagnant.niveau === 9 && perdant.niveau === 10 && gagnant.id === j1.id) {
     gagnant.niveau = 10;
   }
 
   gagnant.victoires++;
   perdant.defaites++;
 
-  await db.collection('joueurs').doc(gagnant.id).update({ niveau: gagnant.niveau, victoires: gagnant.victoires });
-  await db.collection('joueurs').doc(perdant.id).update({ niveau: perdant.niveau, defaites: perdant.defaites });
+  await db.collection('joueurs').doc(gagnant.id).update(gagnant);
+  await db.collection('joueurs').doc(perdant.id).update(perdant);
   await db.collection('defis').add({ joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt, gagnant: gagnant.nom, date: new Date() });
-
-  document.getElementById('score').value = '';
 }
 
-// --- Synchronisation temps réel ---
-db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snapshot => {
+// Synchronisation temps réel
+db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
   let joueurs = [];
-  snapshot.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
+  snap.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
   afficherPyramide(joueurs);
   afficherDefi(joueurs);
   afficherStats(joueurs);
