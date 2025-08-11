@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Championnat Pyramidal du Renard</title>
   <link rel="stylesheet" href="style.css" />
-  
-  <!-- Firebase en mode compat (pas d'import/module requis) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
@@ -19,19 +18,18 @@
       <button onclick="showTab('stats')">Statistiques</button>
     </nav>
   </header>
-
   <main>
     <section id="pyramide">
       <h2>Pyramide</h2>
       <input type="text" id="nouveauNom" placeholder="Nom adhérent" />
       <button onclick="ajouterJoueur()">➕ Ajouter joueur</button>
-      <canvas id="canvasPyramide" width="600" height="600" 
-              style="border:1px solid #ccc; display:block; margin: 20px auto;"></canvas>
+      <div style="width:100%;overflow-x:auto;">
+        <canvas id="canvasPyramide" width="800" height="700" style="display:block;margin:32px auto 0 auto;"></canvas>
+      </div>
     </section>
     <section id="defi" style="display:none;"></section>
     <section id="stats" style="display:none;"></section>
   </main>
-
   <script src="script.js"></script>
 </body>
 </html>
