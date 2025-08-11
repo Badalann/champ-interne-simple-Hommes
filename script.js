@@ -1,3 +1,5 @@
+let challengerId = null; // Id du joueur qui est challenger (dans Firestore, enregistrer dans une collection dédiée)
+
 // === Configuration Firebase ===
 // ⚠️ Remplace par tes infos Firebase
 const firebaseConfig = {
