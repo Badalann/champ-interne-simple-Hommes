@@ -6,39 +6,31 @@ projectId: "championnat-simples-hommes",
 storageBucket: "championnat-simples-hommes.firebasestorage.app",
 messagingSenderId: "264288626258",
 appId: "1:264288626258:web:5272c3c971230f2dc1a18b"
-};
 
+};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Variables globales
+// === Variables ===
 const nomsNiveaux = [
-  "Renardeaux",
-  "Petits roux",
-  "Apprentis rusés",
-  "Jeunes goupils",
-  "Renards vifs",
-  "Goupils rusés",
-  "Renards éclaireurs",
-  "Renards stratèges",
-  "Grands roux",
-  "Renard Majestieux"
+  "Renardeaux", "Petits roux", "Apprentis rusés", "Jeunes goupils",
+  "Renards vifs", "Goupils rusés", "Renards éclaireurs", "Renards stratèges",
+  "Grands roux", "Renard Majestieux"
 ];
 let challengerId = null;
 let challengerNom = "";
 
-// Canvas
+// === Canvas ===
 const canvas = document.getElementById('canvasPyramide');
 const ctx = canvas.getContext('2d');
 
-// Navigation
+// --- Affichage ---
 function showTab(tab) {
   document.getElementById("pyramide").style.display = tab === "pyramide" ? "" : "none";
   document.getElementById("defi").style.display = tab === "defi" ? "" : "none";
   document.getElementById("stats").style.display = tab === "stats" ? "" : "none";
 }
 
-// Dessin badge
 function dessinerBadge(x, y, w, h, texte) {
   const r = 10;
   ctx.beginPath();
@@ -64,7 +56,6 @@ function dessinerBadge(x, y, w, h, texte) {
   ctx.fillText(texte, x + w / 2, y + h / 2);
 }
 
-// Dessin bulle challenger
 function dessinerBulleChallenger(x, y, nom) {
   ctx.beginPath();
   ctx.arc(x, y, 60, 0, 2 * Math.PI);
@@ -83,7 +74,6 @@ function dessinerBulleChallenger(x, y, nom) {
   ctx.fillText(nom || "Vide", x, y + 15);
 }
 
-// Affichage pyramide
 function afficherPyramide(joueurs) {
   const W = canvas.width;
   const H = canvas.height;
@@ -123,12 +113,11 @@ function afficherPyramide(joueurs) {
     });
   }
 
-  // Position bulle challenger
+  // bulle à gauche
   const centerY = (0 + heightPerLevel) / 2 + heightPerLevel / 2;
   dessinerBulleChallenger(100, centerY, challengerNom);
 }
 
-// Afficher formulaire
 function afficherDefi(joueurs) {
   const container = document.getElementById('defi');
   container.innerHTML = `
@@ -138,15 +127,14 @@ function afficherDefi(joueurs) {
     <input type="text" id="score" placeholder="21-18,15-21,21-10"/>
     <button onclick="gererDefi()">✔ Valider</button>
   `;
-  let js = document.getElementById("joueurSelect");
-  let as = document.getElementById("adversaireSelect");
+  const js = document.getElementById("joueurSelect");
+  const as = document.getElementById("adversaireSelect");
   joueurs.forEach(j => {
     js.innerHTML += `<option value="${j.id}">${j.nom}</option>`;
     as.innerHTML += `<option value="${j.id}">${j.nom}</option>`;
   });
 }
 
-// Afficher stats
 function afficherStats(joueurs) {
   const container = document.getElementById('stats');
   container.innerHTML = "<h2>Statistiques</h2>";
@@ -155,44 +143,51 @@ function afficherStats(joueurs) {
   });
 }
 
-// Ajouter un joueur
+// --- Ajouter joueur ---
 async function ajouterJoueur() {
-  let nom = document.getElementById('nouveauNom').value.trim();
+  const nom = document.getElementById('nouveauNom').value.trim();
   if (!nom) return alert("Nom vide");
   const check = await db.collection('joueurs').where('nom', '==', nom).get();
   if (!check.empty) return alert("Ce joueur existe déjà !");
   await db.collection('joueurs').add({ nom, niveau: 1, victoires: 0, defaites: 0 });
 }
 
-// Gerer un défi
+// --- Gérer défi ---
 async function gererDefi() {
-  let id1 = document.getElementById('joueurSelect').value;
-  let id2 = document.getElementById('adversaireSelect').value;
+  const id1 = document.getElementById('joueurSelect').value;
+  const id2 = document.getElementById('adversaireSelect').value;
   if (id1 === id2) return alert("Joueurs identiques !");
-  let scoreTxt = document.getElementById('score').value.trim();
+  const scoreTxt = document.getElementById('score').value.trim();
   if (!scoreTxt) return alert("Pas de score");
 
-  let j1Doc = await db.collection('joueurs').doc(id1).get();
-  let j2Doc = await db.collection('joueurs').doc(id2).get();
+  const j1Doc = await db.collection('joueurs').doc(id1).get();
+  const j2Doc = await db.collection('joueurs').doc(id2).get();
   let j1 = { id: j1Doc.id, ...j1Doc.data() };
   let j2 = { id: j2Doc.id, ...j2Doc.data() };
 
-  let set1 = scoreTxt.split(',')[0].split('-').map(s => parseInt(s));
+  const set1 = scoreTxt.split(',')[0].split('-').map(s => parseInt(s));
   let gagnant = set1[0] > set1[1] ? j1 : j2;
   let perdant = gagnant.id === j1.id ? j2 : j1;
 
-  // Vérifier si déjà un Niv10
-  const joueursNiv10 = await db.collection('joueurs').where('niveau', '==', 10).get();
-  const dejaUnNiv10 = !joueursNiv10.empty;
+  // Vérifier si Niv10 est occupé
+  const niv10Snap = await db.collection('joueurs').where('niveau', '==', 10).get();
+  const niv10Occupe = !niv10Snap.empty;
 
-  // Cas Niv9 vs Niv9 → Challenger
-  if (j1.niveau === 9 && j2.niveau === 9 && !challengerId) {
-    await db.collection('meta').doc('challenger').set({ id: gagnant.id, nom: gagnant.nom });
-    alert(`${gagnant.nom} devient challenger !`);
-    return; // STOP ici, pas de montée
+  // Niv9 vs Niv9
+  if (j1.niveau === 9 && j2.niveau === 9) {
+    if (!niv10Occupe) {
+      // sommet libre => montée directe
+      gagnant.niveau = 10;
+      alert(`${gagnant.nom} monte directement au Niveau 10 (place libre) !`);
+    } else if (!challengerId) {
+      // sommet occupé => créer challenger
+      await db.collection('meta').doc('challenger').set({ id: gagnant.id, nom: gagnant.nom });
+      alert(`${gagnant.nom} devient Challenger !`);
+      return; // stop, pas de règle classique
+    }
   }
 
-  // Cas Challenger vs Niv10
+  // Challenger vs Niv10
   if (challengerId && (j1.id === challengerId || j2.id === challengerId) &&
       (j1.niveau === 10 || j2.niveau === 10)) {
     if (gagnant.id === challengerId) {
@@ -201,41 +196,39 @@ async function gererDefi() {
       alert(`Le challenger ${gagnant.nom} prend la place au sommet !`);
     } else {
       await db.collection('joueurs').doc(challengerId).update({ niveau: 9 });
-      alert(`Le challenger ${challengerNom} a perdu et retourne en Niv9.`);
+      alert(`Le challenger ${challengerNom} a perdu et retourne au Niv9.`);
     }
     await db.collection('meta').doc('challenger').delete();
     return;
   }
 
-  // Empêche défi contre Niv10 hors challenger
-  if ((j1.niveau === 10 || j2.niveau === 10) &&
-      (j1.niveau === 9 || j2.niveau === 9) && !challengerId) {
+  // bloquer N9 vs N10 hors challenger
+  if ((j1.niveau === 9 || j2.niveau === 9) && (j1.niveau === 10 || j2.niveau === 10) && niv10Occupe && !challengerId) {
     alert("Seul le challenger peut défier le Niveau 10.");
     return;
   }
 
-  // Règles classiques (avec blocage montée vers Niv10 si déjà occupé)
+  // Règles classiques
   if (j1.niveau === j2.niveau) {
-    if (gagnant.niveau < 9) gagnant.niveau++;
-    else if (gagnant.niveau === 9 && !dejaUnNiv10) gagnant.niveau++;
+    if (gagnant.niveau < 10) gagnant.niveau++;
     if (perdant.niveau > 1) perdant.niveau--;
-  } else if (perdant.niveau === gagnant.niveau + 1 && gagnant.id === j1.id) {
-    if (gagnant.niveau < 9) gagnant.niveau++;
-    else if (gagnant.niveau === 9 && !dejaUnNiv10) gagnant.niveau++;
+  } else if (perdant.niveau === gagnant.niveau + 1) {
+    gagnant.niveau++;
   }
 
+  // MAJ scores
   gagnant.victoires++;
   perdant.defaites++;
 
   await db.collection('joueurs').doc(gagnant.id).update(gagnant);
   await db.collection('joueurs').doc(perdant.id).update(perdant);
   await db.collection('defis').add({
-    joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt,
-    gagnant: gagnant.nom, date: new Date()
+    joueur1: j1.nom, joueur2: j2.nom,
+    score: scoreTxt, gagnant: gagnant.nom, date: new Date()
   });
 }
 
-// Écoute challenger
+// --- Écoutes ---
 db.collection('meta').doc('challenger').onSnapshot(doc => {
   if (doc.exists) {
     challengerId = doc.data().id;
@@ -246,11 +239,11 @@ db.collection('meta').doc('challenger').onSnapshot(doc => {
   }
 });
 
-// Écoute joueurs et maj affichage
 db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
-  let joueurs = [];
+  const joueurs = [];
   snap.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
   afficherPyramide(joueurs);
   afficherDefi(joueurs);
   afficherStats(joueurs);
 });
+
