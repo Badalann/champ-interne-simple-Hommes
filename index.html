@@ -6,7 +6,7 @@
   <title>Championnat Pyramidal du Renard</title>
   <link rel="stylesheet" href="style.css" />
   
-  <!-- Firebase mode compat -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
@@ -14,28 +14,28 @@
 <header>
   <h1>🏆 Championnat du Renard 🦊</h1>
   <nav>
-    <button onclick="showTab('regles')">Règles</button>
     <button onclick="showTab('pyramide')">Pyramide</button>
     <button onclick="showTab('defi')">Lancer un défi</button>
     <button onclick="showTab('stats')">Statistiques</button>
-    
+    <button onclick="showTab('regles')">Règles</button>
   </nav>
 </header>
 
 <main>
-  <section id="regles" style="display:none;"></section>
   <section id="pyramide">
     <h2>Pyramide</h2>
     <input type="text" id="nouveauNom" placeholder="Nom adhérent" />
     <button onclick="ajouterJoueur()">➕ Ajouter joueur</button>
-    <!-- Canvas affichant la pyramide et la bulle challenger -->
-    <canvas id="canvasPyramide" width="900" height="800"
-            style="display:block;margin:20px auto;"></canvas>
+    <canvas id="canvasPyramide" width="900" height="800" style="display:block;margin:20px auto;"></canvas>
   </section>
 
   <section id="defi" style="display:none;"></section>
-  <section id="stats" style="display:none;"></section>
-  
+
+  <section id="stats" style="display:none;">
+    <!-- Contenu créé par JS -->
+  </section>
+
+  <section id="regles" style="display:none;"></section>
 </main>
 
 <script src="script.js"></script>
