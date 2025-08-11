@@ -48,7 +48,6 @@ function dessinerBadge(x, y, w, h, texte) {
   ctx.fill();
   ctx.strokeStyle = "#c55a11";
   ctx.stroke();
-
   ctx.fillStyle = "#fff";
   ctx.font = "bold 14px Arial";
   ctx.textAlign = "center";
@@ -64,7 +63,6 @@ function dessinerBulleChallenger(x, y, nom) {
   ctx.strokeStyle = "#c55a11";
   ctx.lineWidth = 3;
   ctx.stroke();
-
   ctx.fillStyle = "#fff";
   ctx.font = "bold 14px Arial";
   ctx.textAlign = "center";
@@ -78,7 +76,6 @@ function afficherPyramide(joueurs) {
   const W = canvas.width;
   const H = canvas.height;
   ctx.clearRect(0, 0, W, H);
-
   const baseWidth = W * 0.65;
   const topWidth = W * 0.25;
   const heightPerLevel = H / nomsNiveaux.length;
@@ -88,32 +85,25 @@ function afficherPyramide(joueurs) {
     const y = i * heightPerLevel;
     const widthLvl = baseWidth - (i * (baseWidth - topWidth) / (nomsNiveaux.length - 1));
     const x = (W - widthLvl) / 2 - 80;
-
     ctx.strokeStyle = "#c55a11";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + widthLvl, y);
     ctx.stroke();
-
     ctx.fillStyle = "#c55a11";
     ctx.font = "bold 16px Arial";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(`${nomsNiveaux[lvl - 1]} (Niv.${lvl})`, x + widthLvl + 10, y + heightPerLevel / 2);
-
     const joueursNiv = joueurs.filter(j => j.niveau === lvl);
     const spaceX = widthLvl / (joueursNiv.length + 1);
     const badgeW = Math.min(spaceX * 0.8, 100);
     const badgeH = heightPerLevel * 0.6;
     joueursNiv.forEach((joueur, idx) => {
-      const bx = x + spaceX * (idx + 1) - badgeW / 2;
-      const by = y + (heightPerLevel - badgeH) / 2;
-      dessinerBadge(bx, by, badgeW, badgeH, joueur.nom);
+      dessinerBadge(x + spaceX * (idx + 1) - badgeW / 2, y + (heightPerLevel - badgeH) / 2, badgeW, badgeH, joueur.nom);
     });
   }
-
-  // bulle à gauche
   const centerY = (0 + heightPerLevel) / 2 + heightPerLevel / 2;
   dessinerBulleChallenger(100, centerY, challengerNom);
 }
@@ -173,23 +163,29 @@ async function gererDefi() {
   const niv10Snap = await db.collection('joueurs').where('niveau', '==', 10).get();
   const niv10Occupe = !niv10Snap.empty;
 
-  // Niv9 vs Niv9
+  // Bloc sécurité montée directe
+  if (niv10Occupe && gagnant.niveau === 9 && !(j1.id === challengerId || j2.id === challengerId)) {
+    // Cas où quelqu’un essaie de monter au Niv10 sans être challenger
+    if (perdant.niveau < 10) {
+      alert("Niveau 10 occupé : il faut passer par le Challenger.");
+      return;
+    }
+  }
+
+  // Duel Niv9 vs Niv9
   if (j1.niveau === 9 && j2.niveau === 9) {
     if (!niv10Occupe) {
-      // sommet libre => montée directe
       gagnant.niveau = 10;
       alert(`${gagnant.nom} monte directement au Niveau 10 (place libre) !`);
     } else if (!challengerId) {
-      // sommet occupé => créer challenger
       await db.collection('meta').doc('challenger').set({ id: gagnant.id, nom: gagnant.nom });
       alert(`${gagnant.nom} devient Challenger !`);
-      return; // <<< STOP immédiat pour éviter passage Niv10
+      return; // STOP -> pas de montée
     }
   }
 
   // Challenger vs Niv10
-  if (challengerId && (j1.id === challengerId || j2.id === challengerId) &&
-      (j1.niveau === 10 || j2.niveau === 10)) {
+  if (challengerId && (j1.id === challengerId || j2.id === challengerId) && (j1.niveau === 10 || j2.niveau === 10)) {
     if (gagnant.id === challengerId) {
       await db.collection('joueurs').doc(gagnant.id).update({ niveau: 10 });
       await db.collection('joueurs').doc(perdant.id).update({ niveau: 9 });
@@ -202,13 +198,6 @@ async function gererDefi() {
     return;
   }
 
-  // bloquer N9 vs N10 hors challenger
-  if ((j1.niveau === 9 || j2.niveau === 9) &&
-      (j1.niveau === 10 || j2.niveau === 10) && niv10Occupe && !challengerId) {
-    alert("Seul le challenger peut défier le Niveau 10.");
-    return;
-  }
-
   // Règles classiques
   if (j1.niveau === j2.niveau) {
     if (gagnant.niveau < 10) gagnant.niveau++;
@@ -217,10 +206,8 @@ async function gererDefi() {
     gagnant.niveau++;
   }
 
-  // MAJ scores
   gagnant.victoires++;
   perdant.defaites++;
-
   await db.collection('joueurs').doc(gagnant.id).update(gagnant);
   await db.collection('joueurs').doc(perdant.id).update(perdant);
   await db.collection('defis').add({
