@@ -24,10 +24,7 @@ button {
   border-radius: 5px;
   cursor: pointer;
 }
-
-button:hover {
-  background: #ee7b23;
-}
+button:hover { background: #ee7b23; }
 
 section {
   max-width: 960px;
@@ -42,7 +39,43 @@ select, input {
   max-width: 300px;
 }
 
-/* Optionnel : style pour cacher/afficher sections */
-#pyramide, #defi, #stats {
-  transition: all 0.3s ease;
+/* Tableau stats personnelles */
+#zoneStatsPerso table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(197,90,17,0.2);
+}
+#zoneStatsPerso th, 
+#zoneStatsPerso td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+#zoneStatsPerso th {
+  background-color: #c55a11;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+#zoneStatsPerso tr:nth-child(even) { background-color: #f9f1e7; }
+#zoneStatsPerso tr:hover { background-color: #ffe0c2; }
+.result-victoire { color: green; font-weight: bold; }
+.result-defaite { color: red; font-weight: bold; }
+
+/* Select joueur dans stats */
+#selectStats {
+  padding: 6px 10px;
+  margin: 8px 0;
+  font-size: 15px;
+  border: 1px solid #c55a11;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #333;
+}
+#selectStats:focus {
+  outline: none;
+  border-color: #ee7b23;
+  box-shadow: 0 0 5px rgba(238, 123, 35, 0.5);
 }
