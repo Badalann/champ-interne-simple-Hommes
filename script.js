@@ -26,9 +26,11 @@ const ctx = canvas.getContext('2d');
 
 // --- Affichage ---
 function showTab(tab) {
+  document.getElementById("regles").style.display = tab === "regles" ? "" : "none"
   document.getElementById("pyramide").style.display = tab === "pyramide" ? "" : "none";
   document.getElementById("defi").style.display = tab === "defi" ? "" : "none";
   document.getElementById("stats").style.display = tab === "stats" ? "" : "none";
+  ;
 }
 
 function dessinerBadge(x, y, w, h, texte) {
@@ -80,30 +82,37 @@ function afficherPyramide(joueurs) {
   const topWidth = W * 0.25;
   const heightPerLevel = H / nomsNiveaux.length;
 
+  // Boucle du bas (niveau 1) vers le haut (niveau 10)
   for (let i = 0; i < nomsNiveaux.length; i++) {
-    const lvl = nomsNiveaux.length - i;
-    const y = i * heightPerLevel;
-    const widthLvl = baseWidth - (i * (baseWidth - topWidth) / (nomsNiveaux.length - 1));
+    const lvl = i + 1;  // niveaux de 1 (bas) à 10 (haut)
+    const y = (nomsNiveaux.length - 1 - i) * heightPerLevel; // y décroît avec i
+    const widthLvl = baseWidth - ((lvl - 1) * (baseWidth - topWidth) / (nomsNiveaux.length - 1));
     const x = (W - widthLvl) / 2 - 80;
+
     ctx.strokeStyle = "#c55a11";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + widthLvl, y);
     ctx.stroke();
+
     ctx.fillStyle = "#c55a11";
     ctx.font = "bold 16px Arial";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(`${nomsNiveaux[lvl - 1]} (Niv.${lvl})`, x + widthLvl + 10, y + heightPerLevel / 2);
+
     const joueursNiv = joueurs.filter(j => j.niveau === lvl);
     const spaceX = widthLvl / (joueursNiv.length + 1);
     const badgeW = Math.min(spaceX * 0.8, 100);
     const badgeH = heightPerLevel * 0.6;
     joueursNiv.forEach((joueur, idx) => {
-      dessinerBadge(x + spaceX * (idx + 1) - badgeW / 2, y + (heightPerLevel - badgeH) / 2, badgeW, badgeH, joueur.nom);
+      const bx = x + spaceX * (idx + 1) - badgeW / 2;
+      const by = y + (heightPerLevel - badgeH) / 2;
+      dessinerBadge(bx, by, badgeW, badgeH, joueur.nom);
     });
   }
+
   const centerY = (0 + heightPerLevel) / 2 + heightPerLevel / 2;
   dessinerBulleChallenger(100, centerY, challengerNom);
 }
@@ -127,10 +136,115 @@ function afficherDefi(joueurs) {
 
 function afficherStats(joueurs) {
   const container = document.getElementById('stats');
-  container.innerHTML = "<h2>Statistiques</h2>";
-  joueurs.forEach(j => {
-    container.innerHTML += `<div><b>${j.nom}</b> - 🏆 ${j.victoires} / ❌ ${j.defaites} - Niveau ${j.niveau}</div>`;
+  container.innerHTML = `
+    <h2>Statistiques</h2>
+    <label for="selectStats">Choisissez votre nom :</label>
+    <select id="selectStats">
+      <option value="">-- Sélectionner un joueur --</option>
+      ${joueurs.map(j => `<option value="${j.id}">${j.nom}</option>`).join('')}
+    </select>
+    <div id="zoneStatsPerso" style="margin-top:20px;"></div>
+  `;
+
+  // Événement : changement de joueur sélectionné
+  document.getElementById('selectStats').addEventListener('change', async function() {
+    const joueurId = this.value;
+    const zone = document.getElementById('zoneStatsPerso');
+    zone.innerHTML = "";
+
+    if (!joueurId) return; // rien sélectionné
+
+    // Récupérer le joueur
+    const joueurDoc = await db.collection('joueurs').doc(joueurId).get();
+    if (!joueurDoc.exists) {
+      zone.innerHTML = "<p style='color:red;'>Joueur introuvable.</p>";
+      return;
+    }
+    const joueur = { id: joueurDoc.id, ...joueurDoc.data() };
+
+    // Afficher stats principales
+    zone.innerHTML = `
+      <h3>${joueur.nom}</h3>
+      <p><b>Niveau :</b> ${joueur.niveau}</p>
+      <p><b>Victoires :</b> ${joueur.victoires} | <b>Défaites :</b> ${joueur.defaites}</p>
+      <h4>Historique des défis</h4>
+    `;
+
+    // Récupérer les défis où ce joueur apparaît
+    const matchsSnap = await db.collection('defis')
+      .where('joueur1', '==', joueur.nom).get();
+    const matchsSnap2 = await db.collection('defis')
+      .where('joueur2', '==', joueur.nom).get();
+
+    const matchs = [];
+    matchsSnap.forEach(doc => matchs.push(doc.data()));
+    matchsSnap2.forEach(doc => matchs.push(doc.data()));
+
+    // Trier par date descendante
+    matchs.sort((a,b) => (b.date?.seconds||0) - (a.date?.seconds||0));
+
+    // Afficher tableau des matchs
+    if (matchs.length === 0) {
+      zone.innerHTML += "<p>Aucun match joué.</p>";
+    } else {
+      let htmlTable = `
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f1e7d6;">
+              <th>Date</th><th>Adversaire</th><th>Score</th><th>Résultat</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      matchs.forEach(m => {
+        const d = new Date(m.date?.seconds ? m.date.seconds*1000 : m.date);
+        const dateStr = isNaN(d) ? "" : d.toLocaleDateString()+" "+d.toLocaleTimeString().substring(0,5);
+        const adversaire = m.joueur1 === joueur.nom ? m.joueur2 : m.joueur1;
+        const resultat = m.gagnant === joueur.nom ? "Victoire" : "Défaite";
+        htmlTable += `
+          <tr>
+            <td>${dateStr}</td>
+            <td>${adversaire}</td>
+            <td>${m.score}</td>
+            <td style="color:${resultat==='Victoire'?'green':'red'}">${resultat}</td>
+          </tr>
+        `;
+      });
+      htmlTable += "</tbody></table>";
+      zone.innerHTML += htmlTable;
+    }
   });
+}
+// --- Nouvel onglet RÈGLES ---
+function afficherRegles() {
+  document.getElementById('regles').innerHTML = `
+    <h2>Règles du Championnat</h2>
+    <h3>But du jeu</h3>
+    <p>Durant la saison, vous allez tenter de gravir la pyramide jusqu’au niveau 10 en remportant vos défis.</p>
+    
+    <h3>Structure</h3>
+    <ul>
+      <li>Pyramide de 10 niveaux, 1 joueur max au sommet.</li>
+      <li>Plusieurs joueurs peuvent partager un niveau hors sommet.</li>
+    </ul>
+
+    <h3>Déroulement</h3>
+    <ul>
+      <li> Tous les joueurs et joueuses débutent au niveau 1 de la pyramide. Pour la gravir, vous allez devoir défier les autres joueurs
+      <li> Vous défiez un joueur du même niveau que le votre. Le gagnant monte d'un niveau, le perdant descend d'un niveau
+      <li> Il est possible de défier un joueur un niveau au-dessus pour tenter de monter. En cas de victoire, vous montez mais votre adversaire ne change pas de niveau
+      </li>
+      <li>En cas de victoire, montée selon les règles de la pyramide.</li>
+    </ul>
+
+    <h3>Règle spéciale du Niveau 10</h3>
+    <ul>
+      <li>Si vide : vainqueur du premier match Niv9 vs Niv9 monte directement, perdant descend en Niv8.</li>
+      <li>Si occupé : Niv9 vs Niv9 → vainqueur devient Challenger, perdant descend en Niv8.</li>
+      <li>Seul le Challenger peut défier le sommet occupé.</li>
+      <li>Victoire Challenger : échange de places. Défaite : retour en Niv9.</li>
+    </ul>
+  `;
 }
 
 // --- Ajouter joueur ---
@@ -159,52 +273,42 @@ async function gererDefi() {
   let gagnant = set1[0] > set1[1] ? j1 : j2;
   let perdant = gagnant.id === j1.id ? j2 : j1;
 
-  // Vérifier si Niv10 est occupé
   const niv10Snap = await db.collection('joueurs').where('niveau', '==', 10).get();
   const niv10Occupe = !niv10Snap.empty;
 
-  // --- Bloc spécifique N9 vs N9 ---
+  // Spécifique N9 vs N9
   if (j1.niveau === 9 && j2.niveau === 9) {
     if (!niv10Occupe) {
-      // montée directe + perdant descend
       gagnant.niveau = 10;
       perdant.niveau = 8;
-      alert(`${gagnant.nom} monte directement au Niveau 10 (place libre) !`);
+      alert(`${gagnant.nom} monte en Niv10 (vide) !`);
     } else if (!challengerId) {
-      // Création challenger + perdant descend
       await db.collection('meta').doc('challenger').set({ id: gagnant.id, nom: gagnant.nom });
       perdant.niveau = 8;
       alert(`${gagnant.nom} devient Challenger !`);
-      // MAJ immédiate et sortie
-      gagnant.victoires++;
-      perdant.defaites++;
+      gagnant.victoires++; perdant.defaites++;
       await db.collection('joueurs').doc(gagnant.id).update(gagnant);
       await db.collection('joueurs').doc(perdant.id).update(perdant);
-      await db.collection('defis').add({
-        joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt,
-        gagnant: gagnant.nom, date: new Date()
-      });
+      await db.collection('defis').add({ joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt, gagnant: gagnant.nom, date: new Date() });
       return;
     }
   }
 
-  // Challenger vs Niv10
+  // Duel Challenger vs Niv10
   if (challengerId && (j1.id === challengerId || j2.id === challengerId) && (j1.niveau === 10 || j2.niveau === 10)) {
     if (gagnant.id === challengerId) {
-      // victoire challenger
       await db.collection('joueurs').doc(gagnant.id).update({ niveau: 10 });
       await db.collection('joueurs').doc(perdant.id).update({ niveau: 9 });
-      alert(`Le challenger ${gagnant.nom} prend la place au sommet !`);
+      alert(`Le challenger ${gagnant.nom} prend le sommet !`);
     } else {
-      // défaite challenger
       await db.collection('joueurs').doc(challengerId).update({ niveau: 9 });
-      alert(`Le challenger ${challengerNom} a perdu et retourne au Niv9.`);
+      alert(`Le challenger ${challengerNom} perd et retourne Niv9.`);
     }
     await db.collection('meta').doc('challenger').delete();
     return;
   }
 
-  // Blocage N9 -> N10 hors challenger si sommet occupé
+  // Blocage N9 -> N10 si sommet occupé et pas challenger
   if ((j1.niveau === 9 || j2.niveau === 9) && (j1.niveau === 10 || j2.niveau === 10) && niv10Occupe && !challengerId) {
     alert("Seul le challenger peut défier le Niveau 10.");
     return;
@@ -218,27 +322,17 @@ async function gererDefi() {
     gagnant.niveau++;
   }
 
-  gagnant.victoires++;
-  perdant.defaites++;
+  gagnant.victoires++; perdant.defaites++;
   await db.collection('joueurs').doc(gagnant.id).update(gagnant);
   await db.collection('joueurs').doc(perdant.id).update(perdant);
-  await db.collection('defis').add({
-    joueur1: j1.nom, joueur2: j2.nom,
-    score: scoreTxt, gagnant: gagnant.nom, date: new Date()
-  });
+  await db.collection('defis').add({ joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt, gagnant: gagnant.nom, date: new Date() });
 }
 
 // --- Écoutes ---
 db.collection('meta').doc('challenger').onSnapshot(doc => {
-  if (doc.exists) {
-    challengerId = doc.data().id;
-    challengerNom = doc.data().nom;
-  } else {
-    challengerId = null;
-    challengerNom = "";
-  }
+  challengerId = doc.exists ? doc.data().id : null;
+  challengerNom = doc.exists ? doc.data().nom : "";
 });
-
 db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
   const joueurs = [];
   snap.forEach(doc => joueurs.push({ id: doc.id, ...doc.data() }));
@@ -246,3 +340,5 @@ db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
   afficherDefi(joueurs);
   afficherStats(joueurs);
 });
+afficherRegles();
+
