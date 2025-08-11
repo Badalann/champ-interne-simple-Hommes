@@ -3,15 +3,18 @@ body {
   background: #fffaf3;
   margin: 0;
 }
+
 h1 {
   color: #c55a11;
   text-align: center;
   padding-top: 20px;
 }
+
 nav {
   text-align: center;
   margin-bottom: 20px;
 }
+
 button {
   margin: 8px;
   padding: 8px 15px;
@@ -21,7 +24,11 @@ button {
   border-radius: 5px;
   cursor: pointer;
 }
-button:hover { background: #ee7b23; }
+
+button:hover {
+  background: #ee7b23;
+}
+
 section {
   max-width: 960px;
   margin: auto;
@@ -33,4 +40,9 @@ select, input {
   margin: 5px 0;
   width: 100%;
   max-width: 300px;
+}
+
+/* Optionnel : style pour cacher/afficher sections */
+#pyramide, #defi, #stats {
+  transition: all 0.3s ease;
 }
