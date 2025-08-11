@@ -23,45 +23,9 @@ button {
 }
 button:hover { background: #ee7b23; }
 section {
-  max-width: 650px;
+  max-width: 960px;
   margin: auto;
   padding: 10px;
-}
-
-/* Styles pour la pyramide améliorée */
-.pyramide {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 20px;
-}
-
-.niveau {
-  margin: 8px 0;
-  border: 2px solid #c55a11;
-  border-radius: 10px;
-  padding: 10px;
-  background-color: #f9f1e7;
-  box-shadow: 0 2px 8px rgba(197,90,17,0.3);
-  text-align: center;
-}
-
-.niveau-title {
-  font-weight: bold;
-  font-size: 1.2em;
-  margin-bottom: 10px;
-}
-
-.badge {
-  cursor: default;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  background-color: #ff914d;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  margin: 4px;
-  display: inline-block;
 }
 
 select, input {
