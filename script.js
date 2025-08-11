@@ -163,38 +163,50 @@ async function gererDefi() {
   const niv10Snap = await db.collection('joueurs').where('niveau', '==', 10).get();
   const niv10Occupe = !niv10Snap.empty;
 
-  // Bloc sécurité montée directe
-  if (niv10Occupe && gagnant.niveau === 9 && !(j1.id === challengerId || j2.id === challengerId)) {
-    // Cas où quelqu’un essaie de monter au Niv10 sans être challenger
-    if (perdant.niveau < 10) {
-      alert("Niveau 10 occupé : il faut passer par le Challenger.");
-      return;
-    }
-  }
-
-  // Duel Niv9 vs Niv9
+  // --- Bloc spécifique N9 vs N9 ---
   if (j1.niveau === 9 && j2.niveau === 9) {
     if (!niv10Occupe) {
+      // montée directe + perdant descend
       gagnant.niveau = 10;
+      perdant.niveau = 8;
       alert(`${gagnant.nom} monte directement au Niveau 10 (place libre) !`);
     } else if (!challengerId) {
+      // Création challenger + perdant descend
       await db.collection('meta').doc('challenger').set({ id: gagnant.id, nom: gagnant.nom });
+      perdant.niveau = 8;
       alert(`${gagnant.nom} devient Challenger !`);
-      return; // STOP -> pas de montée
+      // MAJ immédiate et sortie
+      gagnant.victoires++;
+      perdant.defaites++;
+      await db.collection('joueurs').doc(gagnant.id).update(gagnant);
+      await db.collection('joueurs').doc(perdant.id).update(perdant);
+      await db.collection('defis').add({
+        joueur1: j1.nom, joueur2: j2.nom, score: scoreTxt,
+        gagnant: gagnant.nom, date: new Date()
+      });
+      return;
     }
   }
 
   // Challenger vs Niv10
   if (challengerId && (j1.id === challengerId || j2.id === challengerId) && (j1.niveau === 10 || j2.niveau === 10)) {
     if (gagnant.id === challengerId) {
+      // victoire challenger
       await db.collection('joueurs').doc(gagnant.id).update({ niveau: 10 });
       await db.collection('joueurs').doc(perdant.id).update({ niveau: 9 });
       alert(`Le challenger ${gagnant.nom} prend la place au sommet !`);
     } else {
+      // défaite challenger
       await db.collection('joueurs').doc(challengerId).update({ niveau: 9 });
       alert(`Le challenger ${challengerNom} a perdu et retourne au Niv9.`);
     }
     await db.collection('meta').doc('challenger').delete();
+    return;
+  }
+
+  // Blocage N9 -> N10 hors challenger si sommet occupé
+  if ((j1.niveau === 9 || j2.niveau === 9) && (j1.niveau === 10 || j2.niveau === 10) && niv10Occupe && !challengerId) {
+    alert("Seul le challenger peut défier le Niveau 10.");
     return;
   }
 
