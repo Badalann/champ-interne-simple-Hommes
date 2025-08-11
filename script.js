@@ -183,7 +183,7 @@ async function gererDefi() {
       // sommet occupé => créer challenger
       await db.collection('meta').doc('challenger').set({ id: gagnant.id, nom: gagnant.nom });
       alert(`${gagnant.nom} devient Challenger !`);
-      return; // stop, pas de règle classique
+      return; // <<< STOP immédiat pour éviter passage Niv10
     }
   }
 
@@ -203,7 +203,8 @@ async function gererDefi() {
   }
 
   // bloquer N9 vs N10 hors challenger
-  if ((j1.niveau === 9 || j2.niveau === 9) && (j1.niveau === 10 || j2.niveau === 10) && niv10Occupe && !challengerId) {
+  if ((j1.niveau === 9 || j2.niveau === 9) &&
+      (j1.niveau === 10 || j2.niveau === 10) && niv10Occupe && !challengerId) {
     alert("Seul le challenger peut défier le Niveau 10.");
     return;
   }
@@ -246,4 +247,3 @@ db.collection('joueurs').orderBy('niveau', 'desc').onSnapshot(snap => {
   afficherDefi(joueurs);
   afficherStats(joueurs);
 });
-
